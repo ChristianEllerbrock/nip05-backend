@@ -14,6 +14,7 @@ model User {
     identifier  String?
     isActivated Boolean
     createdAt   DateTime
+    nipped      Int      @default(0)
 
     userVerifications UserVerification[]
     userRelays        UserRelay[]

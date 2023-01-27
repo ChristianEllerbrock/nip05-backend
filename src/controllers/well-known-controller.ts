@@ -2,6 +2,9 @@ import { NextFunction, Request, Response } from "express";
 import { buildNip05FromIdentifierAsync } from "../nostr/helpers";
 import { PrismaService } from "../services/prisma-service";
 import { UserEventTypeId } from "../prisma/interfaces";
+import { Nip05CacheService } from "../services/nip05-cache-service";
+import { Nip05 } from "../nostr/type-defs";
+import { join } from "path";
 
 interface Query {
     name?: string;
@@ -22,15 +25,34 @@ export async function wellKnownController(
 
         const identifier = query.name.trim();
 
-        const data = await buildNip05FromIdentifierAsync(identifier);
+        // 1st check the cache
+        let cacheStore = Nip05CacheService.instance.get(identifier);
+        if (!cacheStore) {
+            const data = await buildNip05FromIdentifierAsync(identifier);
+
+            // Cache element
+            cacheStore = Nip05CacheService.instance.set(
+                identifier,
+                data[0],
+                data[1]
+            );
+        }
 
         // Log Event
-        PrismaService.instance.logUserEventAsync(
-            data[0],
+        await PrismaService.instance.logUserEventAsync(
+            cacheStore.userId,
             UserEventTypeId.userNipped
         );
 
-        res.json(data[1]);
+        // Update Stats
+        await PrismaService.instance.db.user.update({
+            where: { id: cacheStore.userId },
+            data: {
+                nipped: { increment: 1 },
+            },
+        });
+
+        res.json(cacheStore.nip05);
     } catch (error) {
         next(error);
     }
