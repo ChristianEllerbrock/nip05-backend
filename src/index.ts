@@ -7,6 +7,7 @@ import { graphqlHTTP } from "express-graphql";
 import { getGraphqlContext } from "./graphql/type-defs";
 import { buildSchema } from "type-graphql";
 import { schemaOptions } from "./graphql/schema";
+import { wellKnownController } from "./controllers/well-known-controller";
 
 // Load any environmental variables from the local .env file
 dotenv.config();
@@ -18,6 +19,22 @@ const port = EnvService.instance.env.PORT;
 
 app.use(express.json());
 app.use(cors());
+
+// API Controller routes
+
+//app.get("/.well-known/nostr.json", async (req: Request, res: Response) => {
+//     const query = req.query as Query;
+//     if (typeof query.name === "undefined") {
+//         res.status(200).send(
+//             "Please provide a name parameter with the identifier you want to query."
+//         );
+//         return;
+//     }
+//     // TODO: Query database here
+//     res.status(200).send(req.query);
+// });
+
+app.get("/.well-known/nostr.json", wellKnownController);
 
 async function bootstrap() {
     const schema = await buildSchema(schemaOptions);

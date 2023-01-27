@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { UserEventTypeId } from "../prisma/interfaces";
 
 export class PrismaService {
     // #region Singleton
@@ -32,5 +33,18 @@ export class PrismaService {
     private _db: PrismaClient;
 
     // #endregion Private Properties
+
+    // #region Public Methods
+
+    async logUserEventAsync(userId: string, userEventTypeId: UserEventTypeId) {
+        await this.db.userEvent.create({
+            data: {
+                userId,
+                userEventTypeId,
+            },
+        });
+    }
+
+    // #endregion Public Methods
 }
 

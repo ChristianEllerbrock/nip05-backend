@@ -39,9 +39,10 @@ model UserRelay {
 }
 
 model UserEvent {
-    id              String @id @default(uuid())
+    id              String   @id @default(uuid())
     userId          String
     userEventTypeId Int
+    createdAt       DateTime @default(now())
 
     user         User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     userEentType UserEventType @relation(fields: [userEventTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
