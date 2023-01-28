@@ -54,3 +54,8 @@ model UserEventType {
     name       String
     userEvents UserEvent[]
 }
+
+model BlockedIdentifier {
+    id   Int    @id @default(autoincrement())
+    name String @unique
+}

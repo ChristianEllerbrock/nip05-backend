@@ -1,5 +1,9 @@
-import { Args, Ctx, Query, Resolver } from "type-graphql";
+import { Prisma } from "@prisma/client";
+import { Arg, Args, Ctx, Query, Resolver } from "type-graphql";
+import { HelperIdentifier } from "../../helpers/identifier";
+import { PrismaService } from "../../services/prisma-service";
 import { FindUserInput } from "../inputs/find-user-input";
+import { IdentifierRegisterCheckOutput } from "../outputs/identifier-register-check-output";
 import { UserOutput } from "../outputs/user-output";
 import { GraphqlContext } from "../type-defs";
 
@@ -17,6 +21,16 @@ export class UserOutputResolver {
             throw new Error("Could not find user in database.");
         }
         return dbUser;
+    }
+
+    @Query((returns) => IdentifierRegisterCheckOutput)
+    async canIdentifierBeRegistered(
+        @Ctx() context: GraphqlContext,
+        @Arg("identifier", (type) => String) identifier: string
+    ): Promise<IdentifierRegisterCheckOutput> {
+        return await HelperIdentifier.canIdentifierBeRegisteredAsync(
+            identifier
+        );
     }
 }
 
