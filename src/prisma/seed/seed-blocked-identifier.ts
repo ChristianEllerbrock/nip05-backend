@@ -9,6 +9,7 @@ const seed = async function (prisma: PrismaClient) {
             { name: "administrator" },
             { name: "bot" },
             { name: "help" },
+            { name: "registration" },
             { name: "support" },
         ],
     });

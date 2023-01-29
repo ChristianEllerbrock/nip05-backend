@@ -19,6 +19,8 @@ model User {
     userVerifications UserVerification[]
     userRelays        UserRelay[]
     userEvents        UserEvent[]
+    authLogins        AuthLogin[]
+    authRegistration  AuthRegistration?
 }
 
 model UserVerification {
@@ -58,4 +60,40 @@ model UserEventType {
 model BlockedIdentifier {
     id   Int    @id @default(autoincrement())
     name String @unique
+}
+
+model AuthRegistration {
+    id         String   @id @default(uuid())
+    userId     String   @unique
+    identifier String
+    createdAt  DateTime
+    validUntil DateTime
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+    authRegistrationCode AuthRegistrationCode?
+}
+
+model AuthRegistrationCode {
+    id                 String @id @default(uuid())
+    authRegistrationId String @unique
+    code               String
+
+    authRegistration AuthRegistration @relation(fields: [authRegistrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model FraudAuthRegistration {
+    id         String   @id @default(uuid())
+    userId     String   @unique
+    reportedAt DateTime
+}
+
+model AuthLogin {
+    id         String   @id @default(uuid())
+    userId     String
+    code       String
+    createdAt  DateTime
+    validUntil DateTime
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

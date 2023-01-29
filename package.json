@@ -38,6 +38,7 @@
         "nostr-tools": "^1.2.0",
         "reflect-metadata": "^0.1.13",
         "type-graphql": "^1.2.0-rc.1",
+        "websocket-polyfill": "^0.0.3",
         "ws": "^8.11.0"
     },
     "devDependencies": {

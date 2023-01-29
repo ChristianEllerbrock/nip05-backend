@@ -8,6 +8,7 @@ import { getGraphqlContext } from "./graphql/type-defs";
 import { buildSchema } from "type-graphql";
 import { schemaOptions } from "./graphql/schema";
 import { wellKnownController } from "./controllers/well-known-controller";
+import { hexController } from "./controllers/hex-controller";
 
 // Load any environmental variables from the local .env file
 dotenv.config();
@@ -35,6 +36,7 @@ app.use(cors());
 // });
 
 app.get("/.well-known/nostr.json", wellKnownController);
+app.get("/hex", hexController);
 
 async function bootstrap() {
     const schema = await buildSchema(schemaOptions);
