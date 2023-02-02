@@ -14,11 +14,11 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "clean": "rimraf -rf dist",
-        "prebuild": "yarn run clean",
+        "prebuild": "npm run clean",
         "build": "npx tsc",
-        "build:debug": "yarn run clean && npx tsc",
+        "build:debug": "npm run clean && npx tsc",
         "start": "node dist/index.js",
-        "dev": "yarn run clean && concurrently \"npx tsc --watch\" \"nodemon --inspect src/index.ts\"",
+        "dev": "npm run clean && concurrently \"npx tsc --watch\" \"nodemon --inspect src/index.ts\"",
         "kill": "fuser 4000/tcp -k"
     },
     "dependencies": {
