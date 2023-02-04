@@ -10,7 +10,7 @@ import { PrismaService } from "../../services/prisma-service";
 import { DateTime } from "luxon";
 import { HelperAuth } from "../../helpers/helper-auth";
 import { Nostr } from "../../nostr/nostr";
-//import { RelayService } from "../../services/relay-service";
+import { RelayService_ } from "../../services/relay-service";
 
 @Resolver(UserOutput)
 export class UserOutputResolver {
@@ -95,16 +95,16 @@ export class UserOutputResolver {
                 },
             });
 
-        // // const result = await RelayService.instance.sendAuthAsync(
-        // //     //"wss://relay.nostr.info",
-        // //     //"wss://relay.damos.io",
-        // //     //"wss://nostr.vulpem.com",
-        // //     "wss://nostr.yael.at",
-        // //     dbUser.pubkey,
-        // //     dbAuthRegistrationCode.code,
-        // //     dbAuthRegistration.id
-        // // );
-        // console.log(result);
+        const result = await RelayService_.instance.sendAuthAsync(
+            //"wss://relay.nostr.info",
+            //"wss://relay.damos.io",
+            //"wss://nostr.vulpem.com",
+            "wss://nostr.yael.at",
+            dbUser.pubkey,
+            dbAuthRegistrationCode.code,
+            dbAuthRegistration.id
+        );
+        console.log(result);
 
         return dbAuthRegistration;
     }

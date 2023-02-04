@@ -1,14 +1,4 @@
-// import {
-//     relayInit,
-//     getPublicKey,
-//     getEventHash,
-//     signEvent,
-//     nip04,
-//     Event,
-//     Relay,
-// } from "nostr-tools";
-
-import { Nostr, NostrEventCreateData, NostrEventKind } from "../nostr/nostr";
+import { Nostr, NostrEventKind } from "../nostr/nostr";
 import { NostrClient } from "../nostr/nostr-client";
 
 export class RelayService_ {
