@@ -9,6 +9,7 @@ import { GraphqlContext } from "../type-defs";
 import { PrismaService } from "../../services/prisma-service";
 import { DateTime } from "luxon";
 import { HelperAuth } from "../../helpers/helper-auth";
+import { Nostr } from "../../nostr/nostr";
 //import { RelayService } from "../../services/relay-service";
 
 @Resolver(UserOutput)
@@ -49,17 +50,7 @@ export class UserOutputResolver {
             throw new Error(check.reason);
         }
 
-        // Check if the user provided a valid npub
-        let pubkey: string = "";
-        // try {
-        //     const pk = nip19.decode(args.npub);
-        //     if (pk.type !== "npub") {
-        //         throw new Error("Please provide a valid pubkey.");
-        //     }
-        //     pubkey = pk.data as string;
-        // } catch (error) {
-        //     throw new Error("Please provide a valid pubkey.");
-        // }
+        let pubkey = Nostr.npubToHexObject(args.npub).hex;
 
         // Check if the user is already registered
         let dbUser = await PrismaService.instance.db.user.findFirst({

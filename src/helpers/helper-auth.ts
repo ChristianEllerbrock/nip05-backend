@@ -1,9 +1,5 @@
 import * as crypto from "node:crypto";
 
-if (!(globalThis as any).crypto) {
-    (globalThis as any).crypto = crypto;
-}
-
 export class HelperAuth {
     static generateCode(): string {
         const array = new Uint32Array(1);

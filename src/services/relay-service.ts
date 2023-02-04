@@ -8,139 +8,112 @@
 //     Relay,
 // } from "nostr-tools";
 
-// export class RelayService_ {
-//     // #region Singleton
+import { Nostr, NostrEventCreateData, NostrEventKind } from "../nostr/nostr";
+import { NostrClient } from "../nostr/nostr-client";
 
-//     private static _instance: RelayService_;
+export class RelayService_ {
+    // #region Singleton
 
-//     static get instance() {
-//         if (this._instance) {
-//             return this._instance;
-//         }
+    private static _instance: RelayService_;
 
-//         this._instance = new RelayService_();
-//         return this._instance;
-//     }
+    static get instance() {
+        if (this._instance) {
+            return this._instance;
+        }
 
-//     constructor() {
-//         this._botPrivkey = process.env.BOT_PRIVKEY ?? "na";
-//     }
+        this._instance = new RelayService_();
+        return this._instance;
+    }
 
-//     // #endregion Singleton
+    constructor() {
+        this._botPrivkey = process.env.BOT_PRIVKEY ?? "na";
+    }
 
-//     // #region Private Properties
+    // #endregion Singleton
 
-//     private _botPrivkey: string;
+    // #region Private Properties
 
-//     // #endregion Private Properties
+    private _botPrivkey: string;
 
-//     // #region Public Properties
+    // #endregion Private Properties
 
-//     get botPubKey(): string | undefined {
-//         if (!this._botPrivkey) {
-//             return undefined;
-//         }
-//         return getPublicKey(this._botPrivkey);
-//     }
+    // #region Public Properties
 
-//     // #endregion Public Properties
+    get botPubKey(): string | undefined {
+        if (!this._botPrivkey) {
+            return undefined;
+        }
+        return Nostr.getPubKeyHexObjectFromPrivKey(this._botPrivkey).hex;
+    }
 
-//     // #region Public Methods
+    // #endregion Public Properties
 
-//     async sendAuthAsync(
-//         relayAddress: string,
-//         pubkey: string,
-//         code: string,
-//         fraudId: string
-//     ): Promise<boolean> {
-//         try {
-//             const relay = relayInit(relayAddress);
+    // #region Public Methods
 
-//             relay.on("connect", () => {
-//                 console.log(`connected to ${relay.url}`);
-//             });
+    async sendAuthAsync(
+        relayAddress: string,
+        pubkey: string,
+        code: string,
+        fraudId: string
+    ): Promise<boolean> {
+        try {
+            const client = new NostrClient(relayAddress);
 
-//             relay.on("error", () => {
-//                 console.log("wss error");
-//             });
-//             await relay.connect();
+            // First, send the NIP05 infos from the sending bot to the relay.
+            const kind0Content = {
+                name: "nip05.social",
+                nip05: "registration@nip05.social",
+            };
 
-//             const botContentKind0 = {
-//                 name: "nip05.social",
-//                 nip05: "registration@nip05.social",
-//             };
+            const kind0Event = Nostr.createEvent({
+                privkey: this._botPrivkey,
+                data: {
+                    kind: NostrEventKind.Metadata,
+                    pubkey: this.botPubKey as string,
+                    created_at: Math.floor(Date.now() / 1000),
+                    content: JSON.stringify(kind0Content),
+                    tags: [],
+                },
+            });
+            await client.sendAsync(kind0Event);
 
-//             let kind0Event: Event = {
-//                 kind: 0,
-//                 pubkey: this.botPubKey as string,
-//                 created_at: Math.floor(Date.now() / 1000),
-//                 content: JSON.stringify(botContentKind0),
-//                 tags: [],
-//             };
-//             kind0Event.id = getEventHash(kind0Event);
-//             kind0Event.sig = signEvent(kind0Event, this._botPrivkey);
+            // Second, send the direct message with the registration information to the receiver.
+            const registerContent = `Your REGISTRATION code is ${code}
 
-//             await this._publishAsync(relay, kind0Event);
+If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
 
-//             let message = `Your REGISTRATION code is ${code}
+https://nip05.social/fraud/${fraudId}
 
-// If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
+Your nip05.social Team`;
 
-// https://nip05.social/fraud/${fraudId}
+            const encryptedRegisterContent = await Nostr.encryptDirectMessage(
+                this._botPrivkey,
+                pubkey,
+                registerContent
+            );
 
-// Your nip05.social Team`;
-//             let cipherText = await nip04.encrypt(
-//                 this._botPrivkey,
-//                 pubkey,
-//                 message
-//             );
+            const kind4Event = Nostr.createEvent({
+                privkey: this._botPrivkey,
+                data: {
+                    pubkey: this.botPubKey as string,
+                    created_at: Math.floor(Date.now() / 1000),
+                    kind: 4,
+                    tags: [["p", pubkey]],
+                    content: encryptedRegisterContent,
+                },
+            });
+            await client.sendAsync(kind4Event);
 
-//             let kind4Event: Event = {
-//                 pubkey: this.botPubKey as string,
-//                 created_at: Math.floor(Date.now() / 1000),
-//                 kind: 4,
-//                 tags: [["p", pubkey]],
-//                 content: cipherText,
-//             };
+            // await relay.close(); Currently leads to an error
+            return true;
+        } catch (error) {
+            console.log(error);
+            return false;
+        }
+    }
 
-//             kind4Event.id = getEventHash(kind4Event);
-//             kind4Event.sig = signEvent(kind4Event, this._botPrivkey);
+    // #endregion Public Methods
 
-//             await this._publishAsync(relay, kind4Event);
-
-//             // await relay.close(); Currently leads to an error
-//             return true;
-//         } catch (error) {
-//             console.log(error);
-//             return false;
-//         }
-//     }
-
-//     // #endregion Public Methods
-
-//     // #region Private Methods
-
-//     private async _publishAsync(relay: Relay, event: Event) {
-//         try {
-//             let pub = relay.publish(event);
-
-//             pub.on("ok", () => {
-//                 return;
-//             });
-
-//             pub.on("failed", (reason: any) => {
-//                 console.log(`Pub Error ${reason}`);
-//                 throw new Error(reason);
-//             });
-
-//             pub.on("seen", () => {
-//                 return;
-//             });
-//         } catch (error: any) {
-//             throw new Error(error);
-//         }
-//     }
-
-//     // #endregion Private Methods
-// }
+    // #endregion Private Methods
+}
 
