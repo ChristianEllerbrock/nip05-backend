@@ -1,9 +1,13 @@
-import { getRandomValues } from "node:crypto";
+import * as crypto from "node:crypto";
+
+if (!(globalThis as any).crypto) {
+    (globalThis as any).crypto = crypto;
+}
 
 export class HelperAuth {
     static generateCode(): string {
         const array = new Uint32Array(1);
-        getRandomValues(array);
+        crypto.getRandomValues(array);
 
         return array[0].toString().slice(0, 6);
     }
