@@ -96,10 +96,8 @@ export class UserOutputResolver {
             });
 
         const result = await RelayService_.instance.sendAuthAsync(
-            //"wss://relay.nostr.info",
-            //"wss://relay.damos.io",
-            //"wss://nostr.vulpem.com",
-            "wss://nostr.yael.at",
+            //"wss://nostr.yael.at",
+            "wss://relay.nostr.info",
             dbUser.pubkey,
             dbAuthRegistrationCode.code,
             dbAuthRegistration.id

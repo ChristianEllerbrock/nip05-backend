@@ -6,6 +6,8 @@ const ON = {
     ERROR: "error",
     OPEN: "open",
     MESSAGE: "message",
+    CLOSE: "close",
+    PING: "ping",
 };
 
 export interface NostrClientConfig {
@@ -48,13 +50,17 @@ export class NostrClient {
             this._ws.off(ON.ERROR, this._onError);
             this._ws.off(ON.OPEN, this._onOpen);
             this._ws.off(ON.MESSAGE, this._onMessage);
-            this._ws.close();
+            this._ws.off(ON.CLOSE, this._onClose);
+            this._ws.off(ON.PING, this._onPing);
+            this._ws.terminate();
         }
 
         this._ws = new WebSocket(this._relay);
         this._ws.on(ON.ERROR, this._onError);
         this._ws.on(ON.OPEN, this._onOpen);
         this._ws.on(ON.MESSAGE, this._onMessage);
+        this._ws.on(ON.CLOSE, this._onClose);
+        this._ws.on(ON.PING, this._onPing);
     }
 
     async sendAsync(event: NostrEvent): Promise<void> {
@@ -107,16 +113,22 @@ export class NostrClient {
 
         // Only CONNECTING left
         // Wait until we are connected or throw an exception if the timeout is reached.
-        while (now.diffNow().seconds < this._config.sendTimeoutInSeconds) {
+        let diffInSeconds = now.diffNow("seconds").seconds;
+        while (diffInSeconds > -1 * this._config.sendTimeoutInSeconds) {
             await this._sleep(2000);
             // @ts-ignore
             if (this._ws.readyState === WebSocket.OPEN) {
                 this._ws.send(JSON.stringify(["EVENT", event]));
                 return;
             }
+            diffInSeconds = now.diffNow("seconds").seconds;
         }
 
         throw new Error("Send timeout reached. Could not send message.");
+    }
+
+    close() {
+        this._ws?.close();
     }
 
     // #endregion Public Methods
@@ -124,19 +136,28 @@ export class NostrClient {
     // #region Private Methods
 
     private _onError() {
-        // todo
+        console.log("OnError");
     }
 
     private _onOpen() {
-        // todo
+        console.log("OnOpen");
     }
 
-    private _onMessage(data: any) {}
+    private _onMessage(event: any) {
+        console.log("OnMessage:");
+        console.log(String.fromCharCode.apply(null, event));
+    }
 
-    private async _sleep(ms: number): Promise<void> {
-        setTimeout(() => {
-            return;
-        }, ms);
+    private _onClose() {
+        console.log("OnClose");
+    }
+
+    private _onPing() {
+        console.log("OnPing");
+    }
+
+    private _sleep(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     // #endregion Private Methods

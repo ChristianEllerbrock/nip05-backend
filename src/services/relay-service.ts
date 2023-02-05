@@ -94,6 +94,7 @@ Your nip05.social Team`;
             });
             await client.sendAsync(kind4Event);
 
+            //client.close();
             // await relay.close(); Currently leads to an error
             return true;
         } catch (error) {
