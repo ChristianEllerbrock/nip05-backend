@@ -6,11 +6,11 @@ import { AuthRegistrationOutput } from "../outputs/auth-registration-output";
 import { IdentifierRegisterCheckOutput } from "../outputs/identifier-register-check-output";
 import { UserOutput } from "../outputs/user-output";
 import { GraphqlContext } from "../type-defs";
-import { nip19 } from "nostr-tools";
 import { PrismaService } from "../../services/prisma-service";
 import { DateTime } from "luxon";
 import { HelperAuth } from "../../helpers/helper-auth";
-import { RelayService } from "../../services/relay-service";
+import { Nostr } from "../../nostr/nostr";
+import { RelayService_ } from "../../services/relay-service";
 
 @Resolver(UserOutput)
 export class UserOutputResolver {
@@ -50,17 +50,7 @@ export class UserOutputResolver {
             throw new Error(check.reason);
         }
 
-        // Check if the user provided a valid npub
-        let pubkey: string = "";
-        try {
-            const pk = nip19.decode(args.npub);
-            if (pk.type !== "npub") {
-                throw new Error("Please provide a valid pubkey.");
-            }
-            pubkey = pk.data as string;
-        } catch (error) {
-            throw new Error("Please provide a valid pubkey.");
-        }
+        let pubkey = Nostr.npubToHexObject(args.npub).hex;
 
         // Check if the user is already registered
         let dbUser = await PrismaService.instance.db.user.findFirst({
@@ -105,11 +95,9 @@ export class UserOutputResolver {
                 },
             });
 
-        const result = await RelayService.instance.sendAuthAsync(
-            //"wss://relay.nostr.info",
-            //"wss://relay.damos.io",
-            //"wss://nostr.vulpem.com",
-            "wss://nostr.yael.at",
+        const result = await RelayService_.instance.sendAuthAsync(
+            //"wss://nostr.yael.at",
+            "wss://relay.nostr.info",
             dbUser.pubkey,
             dbAuthRegistrationCode.code,
             dbAuthRegistration.id

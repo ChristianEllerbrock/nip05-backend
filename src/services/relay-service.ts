@@ -1,25 +1,17 @@
-import "websocket-polyfill";
-import {
-    relayInit,
-    getPublicKey,
-    getEventHash,
-    signEvent,
-    nip04,
-    Event,
-    Relay,
-} from "nostr-tools";
+import { Nostr, NostrEventKind } from "../nostr/nostr";
+import { NostrClient } from "../nostr/nostr-client";
 
-export class RelayService {
+export class RelayService_ {
     // #region Singleton
 
-    private static _instance: RelayService;
+    private static _instance: RelayService_;
 
     static get instance() {
         if (this._instance) {
             return this._instance;
         }
 
-        this._instance = new RelayService();
+        this._instance = new RelayService_();
         return this._instance;
     }
 
@@ -41,7 +33,7 @@ export class RelayService {
         if (!this._botPrivkey) {
             return undefined;
         }
-        return getPublicKey(this._botPrivkey);
+        return Nostr.getPubKeyHexObjectFromPrivKey(this._botPrivkey).hex;
     }
 
     // #endregion Public Properties
@@ -55,60 +47,54 @@ export class RelayService {
         fraudId: string
     ): Promise<boolean> {
         try {
-            const relay = relayInit(relayAddress);
+            const client = new NostrClient(relayAddress);
 
-            relay.on("connect", () => {
-                console.log(`connected to ${relay.url}`);
-            });
-
-            relay.on("error", () => {
-                console.log("wss error");
-            });
-            await relay.connect();
-
-            const botContentKind0 = {
+            // First, send the NIP05 infos from the sending bot to the relay.
+            const kind0Content = {
                 name: "nip05.social",
                 nip05: "registration@nip05.social",
             };
 
-            let kind0Event: Event = {
-                kind: 0,
-                pubkey: this.botPubKey as string,
-                created_at: Math.floor(Date.now() / 1000),
-                content: JSON.stringify(botContentKind0),
-                tags: [],
-            };
-            kind0Event.id = getEventHash(kind0Event);
-            kind0Event.sig = signEvent(kind0Event, this._botPrivkey);
+            const kind0Event = Nostr.createEvent({
+                privkey: this._botPrivkey,
+                data: {
+                    kind: NostrEventKind.Metadata,
+                    pubkey: this.botPubKey as string,
+                    created_at: Math.floor(Date.now() / 1000),
+                    content: JSON.stringify(kind0Content),
+                    tags: [],
+                },
+            });
+            await client.sendAsync(kind0Event);
 
-            await this._publishAsync(relay, kind0Event);
-
-            let message = `Your REGISTRATION code is ${code}
+            // Second, send the direct message with the registration information to the receiver.
+            const registerContent = `Your REGISTRATION code is ${code}
 
 If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
 
 https://nip05.social/fraud/${fraudId}
 
 Your nip05.social Team`;
-            let cipherText = await nip04.encrypt(
+
+            const encryptedRegisterContent = await Nostr.encryptDirectMessage(
                 this._botPrivkey,
                 pubkey,
-                message
+                registerContent
             );
 
-            let kind4Event: Event = {
-                pubkey: this.botPubKey as string,
-                created_at: Math.floor(Date.now() / 1000),
-                kind: 4,
-                tags: [["p", pubkey]],
-                content: cipherText,
-            };
+            const kind4Event = Nostr.createEvent({
+                privkey: this._botPrivkey,
+                data: {
+                    pubkey: this.botPubKey as string,
+                    created_at: Math.floor(Date.now() / 1000),
+                    kind: 4,
+                    tags: [["p", pubkey]],
+                    content: encryptedRegisterContent,
+                },
+            });
+            await client.sendAsync(kind4Event);
 
-            kind4Event.id = getEventHash(kind4Event);
-            kind4Event.sig = signEvent(kind4Event, this._botPrivkey);
-
-            await this._publishAsync(relay, kind4Event);
-
+            //client.close();
             // await relay.close(); Currently leads to an error
             return true;
         } catch (error) {
@@ -118,29 +104,6 @@ Your nip05.social Team`;
     }
 
     // #endregion Public Methods
-
-    // #region Private Methods
-
-    private async _publishAsync(relay: Relay, event: Event) {
-        try {
-            let pub = relay.publish(event);
-
-            pub.on("ok", () => {
-                return;
-            });
-
-            pub.on("failed", (reason: any) => {
-                console.log(`Pub Error ${reason}`);
-                throw new Error(reason);
-            });
-
-            pub.on("seen", () => {
-                return;
-            });
-        } catch (error: any) {
-            throw new Error(error);
-        }
-    }
 
     // #endregion Private Methods
 }

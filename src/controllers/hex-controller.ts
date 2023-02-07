@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { nip19 } from "nostr-tools";
+import { Nostr } from "../nostr/nostr";
 
 interface Query {
     value?: string;
@@ -12,8 +12,8 @@ export function hexController(req: Request, res: Response, next: NextFunction) {
             throw new Error("Please provide the param 'value'.");
         }
 
-        let key = nip19.decode(query.value);
-        res.json(key);
+        const hexObject = Nostr.nXXXToHexObject(query.value);
+        res.json(hexObject);
     } catch (error) {
         next(error);
     }
