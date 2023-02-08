@@ -1,7 +1,7 @@
 import { ArgsType, Field } from "type-graphql";
 
 @ArgsType()
-export class AuthRegistrationCreateInput {
+export class RegistrationRequestCreateInput {
     @Field((type) => String)
     identifier!: string;
 

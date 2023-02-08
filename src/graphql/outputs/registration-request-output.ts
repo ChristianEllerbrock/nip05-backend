@@ -1,10 +1,10 @@
 import { Field, ObjectType } from "type-graphql";
 
-@ObjectType("AuthRegistrationOutput", {
+@ObjectType("RegistrationRequestOutput", {
     isAbstract: true,
     simpleResolvers: true,
 })
-export class AuthRegistrationOutput {
+export class RegistrationRequestOutput {
     @Field((type) => String)
     id!: string;
 
