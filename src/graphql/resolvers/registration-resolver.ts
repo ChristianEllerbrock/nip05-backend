@@ -1,31 +1,40 @@
 import { DateTime } from "luxon";
 import { Arg, Args, Ctx, Mutation, Query, Resolver } from "type-graphql";
-import { HelperAuth } from "../../helpers/helper-auth";
 import { HelperIdentifier } from "../../helpers/identifier";
 import { Nostr } from "../../nostr/nostr";
+import { SystemConfigId } from "../../prisma/assortments";
 import { PrismaService } from "../../services/prisma-service";
-import { RelayService_ } from "../../services/relay-service";
-import { RegistrationRequestCreateInput } from "../inputs/registration-request-create-input";
+import { RegistrationCreateInput } from "../inputs/registration-request-create-input";
 import { IdentifierRegisterCheckOutput } from "../outputs/identifier-register-check-output";
-import { RegistrationRequestOutput } from "../outputs/registration-request-output";
+import { RegistrationOutput } from "../outputs/registration-output";
 import { GraphqlContext } from "../type-defs";
 
 @Resolver()
 export class RegistrationResolver {
-    @Query((returns) => IdentifierRegisterCheckOutput)
-    async canIdentifierBeRegistered(
-        @Ctx() context: GraphqlContext,
-        @Arg("identifier", (type) => String) identifier: string
-    ): Promise<IdentifierRegisterCheckOutput> {
-        return await HelperIdentifier.canIdentifierBeRegisteredAsync(
-            identifier
-        );
-    }
+    // @Query((returns) => IdentifierRegisterCheckOutput)
+    // async canIdentifierBeRegistered(
+    //     @Ctx() context: GraphqlContext,
+    //     @Arg("identifier", (type) => String) identifier: string
+    // ): Promise<IdentifierRegisterCheckOutput> {
+    //     return await HelperIdentifier.canIdentifierBeRegisteredAsync(
+    //         identifier
+    //     );
+    // }
 
-    @Mutation((returns) => RegistrationRequestOutput)
-    async createRegistrationRequest(
-        @Args() args: RegistrationRequestCreateInput
-    ): Promise<RegistrationRequestOutput> {
+    @Mutation((returns) => RegistrationOutput)
+    async createRegistration(
+        @Args() args: RegistrationCreateInput
+    ): Promise<RegistrationOutput> {
+        const now = DateTime.now();
+
+        // Clean up registration table
+        await PrismaService.instance.db.registration.deleteMany({
+            where: {
+                verifiedAt: null,
+                validUntil: { lt: now.toJSDate() },
+            },
+        });
+
         const check = await HelperIdentifier.canIdentifierBeRegisteredAsync(
             args.identifier
         );
@@ -40,55 +49,54 @@ export class RegistrationResolver {
         let dbUser = await PrismaService.instance.db.user.findFirst({
             where: { pubkey },
         });
-        if (dbUser && dbUser.isActivated) {
-            throw new Error("You are already registered.");
-        }
-
         if (!dbUser) {
             // Create database user
             dbUser = await PrismaService.instance.db.user.create({
                 data: {
                     pubkey,
                     createdAt: new Date(),
-                    isActivated: false,
-                    identifier: null,
                 },
             });
         }
 
-        const previousDbAuthRegistration =
-            await PrismaService.instance.db.authRegistration.deleteMany({
-                where: { userId: dbUser.id },
-            });
+        const registrationValidityInMinutesAsString =
+            await PrismaService.instance.getSystemConfigAsync(
+                SystemConfigId.RegistrationValidityInMinutes
+            );
+        if (!registrationValidityInMinutesAsString) {
+            throw new Error("System config not found in database.");
+        }
 
-        const dbAuthRegistration =
-            await PrismaService.instance.db.authRegistration.create({
+        const registrationValidityInMinutes = Number.parseInt(
+            registrationValidityInMinutesAsString
+        );
+
+        // Create registration in database
+        const dbRegistration =
+            await PrismaService.instance.db.registration.create({
                 data: {
                     userId: dbUser.id,
                     identifier: check.name,
                     createdAt: new Date(),
-                    validUntil: DateTime.now().plus({ minute: 5 }).toJSDate(),
+                    validUntil: now
+                        .plus({ minute: registrationValidityInMinutes })
+                        .toJSDate(),
+                    verifiedAt: null,
                 },
             });
 
-        const dbAuthRegistrationCode =
-            await PrismaService.instance.db.authRegistrationCode.create({
-                data: {
-                    authRegistrationId: dbAuthRegistration.id,
-                    code: HelperAuth.generateCode(),
-                },
-            });
+        return dbRegistration;
 
-        const result = await RelayService_.instance.sendAuthAsync(
-            //"wss://nostr.yael.at",
-            "wss://relay.nostr.info",
-            dbUser.pubkey,
-            dbAuthRegistrationCode.code,
-            dbAuthRegistration.id
-        );
-        console.log(result);
+        // const result = await RelayService_.instance.sendAuthAsync(
+        //     //"wss://nostr.yael.at",
+        //     "wss://relay.nostr.info",
+        //     dbUser.pubkey,
+        //     dbAuthRegistrationCode.code,
+        //     dbAuthRegistration.id
+        // );
+        // console.log(result);
 
-        return dbAuthRegistration;
+        // return dbAuthRegistration;
     }
 }
 
