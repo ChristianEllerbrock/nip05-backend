@@ -1,4 +1,5 @@
-import { Field, ObjectType } from "type-graphql";
+import { Field, Int, ObjectType } from "type-graphql";
+import { RegistrationCodeOutput } from "./registration-code-output";
 import { UserOutput } from "./user-output";
 
 @ObjectType("RegistrationOutput", {
@@ -12,6 +13,9 @@ export class RegistrationOutput {
     @Field((type) => String)
     userId!: string;
 
+    @Field((type) => String)
+    identifier!: string;
+
     @Field((type) => Date)
     createdAt!: Date;
 
@@ -21,9 +25,15 @@ export class RegistrationOutput {
     @Field((type) => Date, { nullable: true })
     verifiedAt!: Date | null;
 
+    @Field((type) => Int)
+    nipped!: number;
+
     // Model Relations
 
     @Field((type) => UserOutput)
     user?: UserOutput;
+
+    @Field((type) => RegistrationCodeOutput, { nullable: true })
+    registrationCode?: RegistrationCodeOutput | null;
 }
 

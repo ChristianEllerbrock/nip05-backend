@@ -24,6 +24,7 @@ model Registration {
     createdAt  DateTime
     validUntil DateTime
     verifiedAt DateTime?
+    nipped     Int       @default(0)
 
     user             User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
     registrationCode RegistrationCode?

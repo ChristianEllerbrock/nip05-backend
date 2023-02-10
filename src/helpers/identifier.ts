@@ -37,7 +37,7 @@ export class HelperIdentifier {
             return {
                 name: cleanIdentifier,
                 canBeRegistered: false,
-                reason: "Name is blocked.",
+                reason: "Name is blocked or reserved.",
             };
         }
 

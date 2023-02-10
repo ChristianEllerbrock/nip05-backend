@@ -49,6 +49,20 @@ export class PrismaService {
         return this._systemConfig.find((x) => x.id === id)?.value;
     }
 
+    async getSystemConfigAsNumberAsync(
+        id: SystemConfigId
+    ): Promise<number | undefined> {
+        const configValueAsString = await this.getSystemConfigAsync(id);
+        if (!configValueAsString) {
+            return undefined;
+        }
+
+        const configValueAsNumber = Number.parseInt(configValueAsString);
+        return Number.isNaN(configValueAsNumber)
+            ? undefined
+            : configValueAsNumber;
+    }
+
     // async logUserEventAsync(userId: string, userEventTypeId: UserEventTypeId) {
     //     await this._db.userEvent.create({
     //         data: {

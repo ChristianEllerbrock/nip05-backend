@@ -36,6 +36,6 @@ export async function buildNip05FromDatabaseAsync(
             dbRegistration.user.userRelays.map((x) => x.address);
     }
 
-    return [dbRegistration.user.id, data];
+    return [dbRegistration.id, data];
 }
 

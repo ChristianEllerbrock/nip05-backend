@@ -1,13 +1,13 @@
 import { DateTime } from "luxon";
-import { Arg, Args, Ctx, Mutation, Query, Resolver } from "type-graphql";
+import { Arg, Args, Mutation, Resolver } from "type-graphql";
+import { HelperAuth } from "../../helpers/helper-auth";
 import { HelperIdentifier } from "../../helpers/identifier";
 import { Nostr } from "../../nostr/nostr";
 import { SystemConfigId } from "../../prisma/assortments";
 import { PrismaService } from "../../services/prisma-service";
-import { RegistrationCreateInput } from "../inputs/registration-request-create-input";
-import { IdentifierRegisterCheckOutput } from "../outputs/identifier-register-check-output";
+import { RegistrationCodeCreateInput } from "../inputs/registration-code-create-input";
+import { RegistrationCreateInput } from "../inputs/registration-create-input";
 import { RegistrationOutput } from "../outputs/registration-output";
-import { GraphqlContext } from "../type-defs";
 
 @Resolver()
 export class RegistrationResolver {
@@ -20,6 +20,59 @@ export class RegistrationResolver {
     //         identifier
     //     );
     // }
+
+    @Mutation((returns) => Boolean)
+    async createRegistrationCode(
+        @Args() args: RegistrationCodeCreateInput
+    ): Promise<boolean> {
+        const now = DateTime.now();
+
+        const registrationCodeValidityInMinutes =
+            await PrismaService.instance.getSystemConfigAsNumberAsync(
+                SystemConfigId.RegistrationCodeValidityInMinutes
+            );
+
+        if (!registrationCodeValidityInMinutes) {
+            throw new Error("Invalid system config. Please contact support.");
+        }
+
+        const dbRegistration =
+            await PrismaService.instance.db.registration.findFirst({
+                where: { id: args.registrationId, userId: args.userId },
+                include: { registrationCode: true },
+            });
+
+        if (!dbRegistration) {
+            throw new Error("No registration found with these parameters.");
+        }
+
+        if (dbRegistration.verifiedAt) {
+            throw new Error("The registration is already verified.");
+        }
+
+        // Delete old code if one is available
+        if (dbRegistration.registrationCode) {
+            await PrismaService.instance.db.registrationCode.delete({
+                where: { id: dbRegistration.registrationCode.id },
+            });
+        }
+
+        // Create new code
+        const dbRegistrationCode =
+            await PrismaService.instance.db.registrationCode.create({
+                data: {
+                    registrationId: args.registrationId,
+                    createdAt: now.toJSDate(),
+                    validUntil: now
+                        .plus({ minute: registrationCodeValidityInMinutes })
+                        .toJSDate(),
+                    code: HelperAuth.generateCode(),
+                },
+            });
+
+        // TODO: Send code via NOSTR relay
+        return true;
+    }
 
     @Mutation((returns) => RegistrationOutput)
     async createRegistration(
@@ -59,17 +112,13 @@ export class RegistrationResolver {
             });
         }
 
-        const registrationValidityInMinutesAsString =
-            await PrismaService.instance.getSystemConfigAsync(
+        const registrationValidityInMinutes =
+            await PrismaService.instance.getSystemConfigAsNumberAsync(
                 SystemConfigId.RegistrationValidityInMinutes
             );
-        if (!registrationValidityInMinutesAsString) {
+        if (!registrationValidityInMinutes) {
             throw new Error("System config not found in database.");
         }
-
-        const registrationValidityInMinutes = Number.parseInt(
-            registrationValidityInMinutesAsString
-        );
 
         // Create registration in database
         const dbRegistration =

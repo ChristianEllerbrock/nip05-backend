@@ -7,6 +7,11 @@ const seed = async function (prisma: PrismaClient) {
     await prisma.systemConfig.createMany({
         data: [
             { id: i++, name: "REGISTRATION_VALIDITY_IN_MINUTES", value: "20" },
+            {
+                id: i++,
+                name: "REGISTRATION_CODE_VALIDITY_IN_MINUTES",
+                value: "10",
+            },
         ],
     });
 };
