@@ -14,12 +14,13 @@ model User {
     createdAt DateTime
 
     registrations Registration[]
+    userRelays    UserRelay[]
 }
 
 model Registration {
     id         String    @id @default(uuid())
     userId     String
-    identifier String
+    identifier String    @unique
     createdAt  DateTime
     validUntil DateTime
     verifiedAt DateTime?
@@ -36,6 +37,14 @@ model RegistrationCode {
     validUntil     DateTime
 
     registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model UserRelay {
+    id      String @id @default(uuid())
+    userId  String
+    address String
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model SystemConfig {
@@ -55,14 +64,6 @@ model SystemBlockedIdentifier {
 //     createdAt DateTime
 //     expiresAt DateTime
 //     code      String
-
-//     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-// }
-
-// model UserRelay {
-//     id      String @id @default(uuid())
-//     userId  String
-//     address String
 
 //     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 // }

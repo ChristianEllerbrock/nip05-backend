@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { buildNip05FromIdentifierAsync } from "../nostr/helpers";
+import { buildNip05FromDatabaseAsync } from "../nostr/helpers";
 import { PrismaService } from "../services/prisma-service";
 import { UserEventTypeId } from "../prisma/interfaces";
 import { Nip05CacheService } from "../services/nip05-cache-service";
@@ -26,7 +26,7 @@ export async function wellKnownController(
         // 1st check the cache
         let cacheStore = Nip05CacheService.instance.get(identifier);
         if (!cacheStore) {
-            const data = await buildNip05FromIdentifierAsync(identifier);
+            const data = await buildNip05FromDatabaseAsync(identifier);
 
             // cache element
             cacheStore = Nip05CacheService.instance.set(
