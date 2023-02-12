@@ -46,29 +46,29 @@ export class RelayService_ {
         code: string,
         fraudId: string
     ): Promise<boolean> {
-        try {
-            const client = new NostrClient(relayAddress);
+        const client = new NostrClient(relayAddress);
 
-            // First, send the NIP05 infos from the sending bot to the relay.
-            const kind0Content = {
-                name: "nip05.social",
-                nip05: "registration@nip05.social",
-            };
+        // First, send the NIP05 infos from the sending bot to the relay.
+        const kind0Content = {
+            name: "nip05.social",
+            nip05: "registration@nip05.social",
+        };
 
-            const kind0Event = Nostr.createEvent({
-                privkey: this._botPrivkey,
-                data: {
-                    kind: NostrEventKind.Metadata,
-                    pubkey: this.botPubKey as string,
-                    created_at: Math.floor(Date.now() / 1000),
-                    content: JSON.stringify(kind0Content),
-                    tags: [],
-                },
-            });
-            await client.sendAsync(kind0Event);
+        const kind0Event = Nostr.createEvent({
+            privkey: this._botPrivkey,
+            data: {
+                kind: NostrEventKind.Metadata,
+                pubkey: this.botPubKey as string,
+                created_at: Math.floor(Date.now() / 1000),
+                content: JSON.stringify(kind0Content),
+                tags: [],
+            },
+        });
+        console.log(kind0Content);
+        await client.sendAsync(kind0Event);
 
-            // Second, send the direct message with the registration information to the receiver.
-            const registerContent = `Your REGISTRATION code is ${code}
+        // Second, send the direct message with the registration information to the receiver.
+        const registerContent = `Your REGISTRATION code is ${code}
 
 If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
 
@@ -76,31 +76,28 @@ https://nip05.social/fraud/${fraudId}
 
 Your nip05.social Team`;
 
-            const encryptedRegisterContent = await Nostr.encryptDirectMessage(
-                this._botPrivkey,
-                pubkey,
-                registerContent
-            );
+        const encryptedRegisterContent = await Nostr.encryptDirectMessage(
+            this._botPrivkey,
+            pubkey,
+            registerContent
+        );
 
-            const kind4Event = Nostr.createEvent({
-                privkey: this._botPrivkey,
-                data: {
-                    pubkey: this.botPubKey as string,
-                    created_at: Math.floor(Date.now() / 1000),
-                    kind: 4,
-                    tags: [["p", pubkey]],
-                    content: encryptedRegisterContent,
-                },
-            });
-            await client.sendAsync(kind4Event);
+        const kind4Event = Nostr.createEvent({
+            privkey: this._botPrivkey,
+            data: {
+                pubkey: this.botPubKey as string,
+                created_at: Math.floor(Date.now() / 1000),
+                kind: 4,
+                tags: [["p", pubkey]],
+                content: encryptedRegisterContent,
+            },
+        });
+        console.log(kind4Event);
+        await client.sendAsync(kind4Event);
 
-            //client.close();
-            // await relay.close(); Currently leads to an error
-            return true;
-        } catch (error) {
-            console.log(error);
-            return false;
-        }
+        //client.close();
+        // await relay.close(); Currently leads to an error
+        return true;
     }
 
     // #endregion Public Methods

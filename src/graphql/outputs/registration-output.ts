@@ -33,7 +33,9 @@ export class RegistrationOutput {
     @Field((type) => UserOutput)
     user?: UserOutput;
 
-    @Field((type) => RegistrationCodeOutput, { nullable: true })
-    registrationCode?: RegistrationCodeOutput | null;
+    // Prevent the model relation RegistrationCode to be exposed.
+
+    //@Field((type) => RegistrationCodeOutput, { nullable: true })
+    //registrationCode?: RegistrationCodeOutput | null;
 }
 

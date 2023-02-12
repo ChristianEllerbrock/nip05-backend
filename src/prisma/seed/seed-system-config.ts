@@ -12,6 +12,11 @@ const seed = async function (prisma: PrismaClient) {
                 name: "REGISTRATION_CODE_VALIDITY_IN_MINUTES",
                 value: "10",
             },
+            {
+                id: i++,
+                name: "USER_TOKEN_VALIDITY_IN_MINUTES",
+                value: "480",
+            },
         ],
     });
 };

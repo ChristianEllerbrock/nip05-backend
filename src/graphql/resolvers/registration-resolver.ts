@@ -1,30 +1,102 @@
 import { DateTime } from "luxon";
-import { Arg, Args, Mutation, Resolver } from "type-graphql";
+import { Args, Mutation, Resolver } from "type-graphql";
 import { HelperAuth } from "../../helpers/helper-auth";
 import { HelperIdentifier } from "../../helpers/identifier";
 import { Nostr } from "../../nostr/nostr";
 import { SystemConfigId } from "../../prisma/assortments";
 import { PrismaService } from "../../services/prisma-service";
 import { RegistrationCodeCreateInput } from "../inputs/registration-code-create-input";
+import { RegistrationCodeRedeemInput } from "../inputs/registration-code-redeem-input";
 import { RegistrationCreateInput } from "../inputs/registration-create-input";
 import { RegistrationOutput } from "../outputs/registration-output";
+import { UserTokenOutput } from "../outputs/user-token-output";
+import * as uuid from "uuid";
+import { RelayService_ } from "../../services/relay-service";
+
+const cleanupRegistrationAsync = async () => {
+    const now = DateTime.now();
+
+    await PrismaService.instance.db.registration.deleteMany({
+        where: {
+            verifiedAt: null,
+            validUntil: { lt: now.toJSDate() },
+        },
+    });
+};
 
 @Resolver()
 export class RegistrationResolver {
-    // @Query((returns) => IdentifierRegisterCheckOutput)
-    // async canIdentifierBeRegistered(
-    //     @Ctx() context: GraphqlContext,
-    //     @Arg("identifier", (type) => String) identifier: string
-    // ): Promise<IdentifierRegisterCheckOutput> {
-    //     return await HelperIdentifier.canIdentifierBeRegisteredAsync(
-    //         identifier
-    //     );
-    // }
+    @Mutation((returns) => UserTokenOutput)
+    async redeemRegistrationCode(
+        @Args() args: RegistrationCodeRedeemInput
+    ): Promise<UserTokenOutput> {
+        await cleanupRegistrationAsync();
+
+        const dbRegistration =
+            await PrismaService.instance.db.registration.findFirst({
+                where: { id: args.registrationId, userId: args.userId },
+                include: { registrationCode: true },
+            });
+
+        if (!dbRegistration) {
+            throw new Error(
+                "No registration found matching the provided data."
+            );
+        }
+
+        if (dbRegistration.registrationCode?.code !== args.code) {
+            throw new Error("The provided code does not match.");
+        }
+
+        // Code matches. Finalize registration.
+        const now = DateTime.now();
+        await PrismaService.instance.db.registration.update({
+            where: { id: dbRegistration.id },
+            data: {
+                verifiedAt: now.toJSDate(),
+            },
+        });
+
+        await PrismaService.instance.db.registrationCode.delete({
+            where: { id: dbRegistration.registrationCode.id },
+        });
+
+        const userTokenValidityInMinutes =
+            await PrismaService.instance.getSystemConfigAsNumberAsync(
+                SystemConfigId.UserTokenValidityInMinutes
+            );
+
+        if (!userTokenValidityInMinutes) {
+            throw new Error("Invalid system config. Please contact support.");
+        }
+
+        // Create or update user token.
+        const dbUserToken = await PrismaService.instance.db.userToken.upsert({
+            where: { userId: dbRegistration.userId },
+            update: {
+                token: uuid.v4(),
+                validUntil: now
+                    .plus({ minute: userTokenValidityInMinutes })
+                    .toJSDate(),
+            },
+            create: {
+                userId: dbRegistration.userId,
+                token: uuid.v4(),
+                validUntil: now
+                    .plus({ minute: userTokenValidityInMinutes })
+                    .toJSDate(),
+            },
+        });
+
+        return dbUserToken;
+    }
 
     @Mutation((returns) => Boolean)
     async createRegistrationCode(
         @Args() args: RegistrationCodeCreateInput
     ): Promise<boolean> {
+        await cleanupRegistrationAsync();
+
         const now = DateTime.now();
 
         const registrationCodeValidityInMinutes =
@@ -39,7 +111,7 @@ export class RegistrationResolver {
         const dbRegistration =
             await PrismaService.instance.db.registration.findFirst({
                 where: { id: args.registrationId, userId: args.userId },
-                include: { registrationCode: true },
+                include: { registrationCode: true, user: true },
             });
 
         if (!dbRegistration) {
@@ -71,6 +143,15 @@ export class RegistrationResolver {
             });
 
         // TODO: Send code via NOSTR relay
+
+        const result = await RelayService_.instance.sendAuthAsync(
+            //"wss://nostr.yael.at",
+            //"wss://relay.nostr.info",
+            args.relay,
+            dbRegistration.user.pubkey,
+            dbRegistrationCode.code,
+            dbRegistration.id
+        );
         return true;
     }
 
@@ -78,15 +159,9 @@ export class RegistrationResolver {
     async createRegistration(
         @Args() args: RegistrationCreateInput
     ): Promise<RegistrationOutput> {
-        const now = DateTime.now();
+        await cleanupRegistrationAsync();
 
-        // Clean up registration table
-        await PrismaService.instance.db.registration.deleteMany({
-            where: {
-                verifiedAt: null,
-                validUntil: { lt: now.toJSDate() },
-            },
-        });
+        const now = DateTime.now();
 
         const check = await HelperIdentifier.canIdentifierBeRegisteredAsync(
             args.identifier
@@ -135,16 +210,6 @@ export class RegistrationResolver {
             });
 
         return dbRegistration;
-
-        // const result = await RelayService_.instance.sendAuthAsync(
-        //     //"wss://nostr.yael.at",
-        //     "wss://relay.nostr.info",
-        //     dbUser.pubkey,
-        //     dbAuthRegistrationCode.code,
-        //     dbAuthRegistration.id
-        // );
-        // console.log(result);
-
         // return dbAuthRegistration;
     }
 }

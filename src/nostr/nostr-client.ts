@@ -135,8 +135,8 @@ export class NostrClient {
 
     // #region Private Methods
 
-    private _onError() {
-        console.log("OnError");
+    private _onError(event: any) {
+        console.log(`OnError: ${event}`);
     }
 
     private _onOpen() {
