@@ -217,9 +217,9 @@ export class RegistrationResolver {
 
     // #region Authorized Mutations
 
-    @Authorized()
-    @Mutation((returns) => RegistrationRelayOutput)
-    async addRegistrationRelay(): Promise<RegistrationRelayOutput> {}
+    // @Authorized()
+    // @Mutation((returns) => RegistrationRelayOutput)
+    // async addRegistrationRelay(): Promise<RegistrationRelayOutput> {}
 
     // #endregion Authorized Mutations
 }
