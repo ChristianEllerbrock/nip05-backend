@@ -1,17 +1,6 @@
 import "reflect-metadata";
-// import "websocket-polyfill";
-// import * as crypto from "node:crypto";
-// declare global {
-//     var crypto: any;
-//     var fetch: any;
-// }
-// global.crypto = crypto;
 
-// //const fetch = require("node-fetch");
-// import * as fetch from "node-fetch";
-// global.fetch = fetch;
-
-import express, { Express, Request, Response } from "express";
+import express, { Express } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { EnvService } from "./services/env-service";

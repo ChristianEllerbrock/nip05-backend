@@ -1,5 +1,6 @@
 import { Nostr, NostrEventKind } from "../nostr/nostr";
 import { NostrClient } from "../nostr/nostr-client";
+import { EnvService } from "./env-service";
 
 export enum SendCodeReason {
     Registration,
@@ -21,7 +22,7 @@ export class RelayService {
     }
 
     constructor() {
-        this._botPrivkey = process.env.BOT_PRIVKEY ?? "na";
+        this._botPrivkey = EnvService.instance.env.BOT_PRIVKEY ?? "na";
     }
 
     // #endregion Singleton

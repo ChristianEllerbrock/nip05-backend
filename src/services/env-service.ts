@@ -10,6 +10,8 @@ export class EnvServiceEnv {
 
     DATABASE_URL!: string;
     SHADOW_DATABASE_URL!: string;
+
+    BOT_PRIVKEY!: string;
 }
 
 export class EnvService {
@@ -50,13 +52,15 @@ export class EnvService {
     private _buildEnv() {
         const env = new EnvServiceEnv();
 
-        console.log('Trying to read the following keys from ENV:');
+        console.log("Trying to read the following keys from ENV:");
 
-        Object.keys(env).forEach(key => console.log(' ' + key));
+        Object.keys(env).forEach((key) => console.log(" " + key));
 
-        Object.keys(env).forEach(key => {
-            if (typeof process.env[key] === 'undefined') {
-                throw new Error(`Could not read required ENV key '${key}' from ENV.`);
+        Object.keys(env).forEach((key) => {
+            if (typeof process.env[key] === "undefined") {
+                throw new Error(
+                    `Could not read required ENV key '${key}' from ENV.`
+                );
             }
 
             (env as any)[key] = process.env[key];
@@ -66,3 +70,4 @@ export class EnvService {
 
     // #endregion Private Methods
 }
+
