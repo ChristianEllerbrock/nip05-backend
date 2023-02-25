@@ -9,91 +9,141 @@ generator client {
 }
 
 model User {
-    id          String   @id @default(uuid())
-    pubkey      String
-    identifier  String?
-    isActivated Boolean
-    createdAt   DateTime
-    nipped      Int      @default(0)
-
-    userVerifications UserVerification[]
-    userRelays        UserRelay[]
-    userEvents        UserEvent[]
-    authLogins        AuthLogin[]
-    authRegistration  AuthRegistration?
-}
-
-model UserVerification {
     id        String   @id @default(uuid())
-    userId    String
+    pubkey    String   @unique
     createdAt DateTime
-    expiresAt DateTime
-    code      String
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    registrations Registration[]
+    userToken     UserToken?
+    userLoginCode UserLoginCode?
 }
 
-model UserRelay {
-    id      String @id @default(uuid())
-    userId  String
-    address String
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-}
-
-model UserEvent {
-    id              String   @id @default(uuid())
-    userId          String
-    userEventTypeId Int
-    createdAt       DateTime @default(now())
-
-    user         User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    userEentType UserEventType @relation(fields: [userEventTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
-model UserEventType {
-    id         Int         @id
-    name       String
-    userEvents UserEvent[]
-}
-
-model BlockedIdentifier {
-    id   Int    @id @default(autoincrement())
-    name String @unique
-}
-
-model AuthRegistration {
+model UserToken {
     id         String   @id @default(uuid())
     userId     String   @unique
-    identifier String
-    createdAt  DateTime
+    token      String
     validUntil DateTime
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-    authRegistrationCode AuthRegistrationCode?
 }
 
-model AuthRegistrationCode {
-    id                 String @id @default(uuid())
-    authRegistrationId String @unique
-    code               String
+model Registration {
+    id         String    @id @default(uuid())
+    userId     String
+    identifier String    @unique
+    createdAt  DateTime
+    validUntil DateTime
+    verifiedAt DateTime?
+    nipped     Int       @default(0)
 
-    authRegistration AuthRegistration @relation(fields: [authRegistrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    user               User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    registrationCode   RegistrationCode?
+    registrationRelays RegistrationRelay[]
 }
 
-model FraudAuthRegistration {
+model RegistrationCode {
+    id             String   @id @default(uuid())
+    registrationId String   @unique
+    code           String
+    createdAt      DateTime
+    validUntil     DateTime
+
+    registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model RegistrationRelay {
+    id             String @id @default(uuid())
+    registrationId String
+    address        String
+
+    registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model UserLoginCode {
     id         String   @id @default(uuid())
     userId     String   @unique
-    reportedAt DateTime
-}
-
-model AuthLogin {
-    id         String   @id @default(uuid())
-    userId     String
     code       String
     createdAt  DateTime
     validUntil DateTime
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
+
+model SystemConfig {
+    id    Int    @id
+    name  String
+    value String
+}
+
+model SystemBlockedIdentifier {
+    id   Int    @id @default(autoincrement())
+    name String @unique
+}
+
+// model UserVerification {
+//     id        String   @id @default(uuid())
+//     userId    String
+//     createdAt DateTime
+//     expiresAt DateTime
+//     code      String
+
+//     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+// }
+
+// model UserEvent {
+//     id              String   @id @default(uuid())
+//     userId          String
+//     userEventTypeId Int
+//     createdAt       DateTime @default(now())
+
+//     user         User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//     userEentType UserEventType @relation(fields: [userEventTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+// }
+
+// model UserEventType {
+//     id         Int         @id
+//     name       String
+//     userEvents UserEvent[]
+// }
+
+// model BlockedIdentifier {
+//     id   Int    @id @default(autoincrement())
+//     name String @unique
+// }
+
+// model AuthRegistration {
+//     id         String   @id @default(uuid())
+//     userId     String   @unique
+//     identifier String
+//     createdAt  DateTime
+//     validUntil DateTime
+
+//     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+//     authRegistrationCode AuthRegistrationCode?
+// }
+
+// model AuthRegistrationCode {
+//     id                 String @id @default(uuid())
+//     authRegistrationId String @unique
+//     code               String
+
+//     authRegistration AuthRegistration   @relation(fields: [authRegistrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+//     UserRegistration UserRegistration[]
+// }
+
+// model FraudAuthRegistration {
+//     id         String   @id @default(uuid())
+//     userId     String   @unique
+//     reportedAt DateTime
+// }
+
+// model AuthLogin {
+//     id         String   @id @default(uuid())
+//     userId     String
+//     code       String
+//     createdAt  DateTime
+//     validUntil DateTime
+
+//     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+// }

@@ -34,19 +34,6 @@ app.use(express.json());
 app.use(cors());
 
 // API Controller routes
-
-//app.get("/.well-known/nostr.json", async (req: Request, res: Response) => {
-//     const query = req.query as Query;
-//     if (typeof query.name === "undefined") {
-//         res.status(200).send(
-//             "Please provide a name parameter with the identifier you want to query."
-//         );
-//         return;
-//     }
-//     // TODO: Query database here
-//     res.status(200).send(req.query);
-// });
-
 app.get("/.well-known/nostr.json", wellKnownController);
 app.get("/hex", hexController);
 

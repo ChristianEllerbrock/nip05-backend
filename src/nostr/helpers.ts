@@ -5,31 +5,36 @@ import { Nip05 } from "./type-defs";
  * Performs a lookup in the database and returns a [userId, Nip05] tuple if available.
  * If no database record was found, an exception is thrown.
  */
-export async function buildNip05FromIdentifierAsync(
+export async function buildNip05FromDatabaseAsync(
     identifier: string
 ): Promise<[string, Nip05]> {
-    const dbUser = await PrismaService.instance.db.user.findFirst({
-        where: {
-            identifier,
-            isActivated: true,
-        },
-        include: { userRelays: true },
-    });
+    const dbRegistration =
+        await PrismaService.instance.db.registration.findFirst({
+            where: {
+                identifier,
+                verifiedAt: { not: null },
+            },
+            include: {
+                user: true,
+                registrationRelays: true,
+            },
+        });
 
-    if (!dbUser) {
+    if (!dbRegistration) {
         throw new Error(`No record found with the name '${identifier}'.`);
     }
 
     const data: Nip05 = {
         names: {},
     };
-    data.names[identifier] = dbUser.pubkey;
+    data.names[identifier] = dbRegistration.user.pubkey;
 
-    if (dbUser.userRelays.length > 0) {
+    if (dbRegistration.registrationRelays.length > 0) {
         data.relays = {};
-        data.relays[dbUser.pubkey] = dbUser.userRelays.map((x) => x.address);
+        data.relays[dbRegistration.user.pubkey] =
+            dbRegistration.registrationRelays.map((x) => x.address);
     }
 
-    return [dbUser.id, data];
+    return [dbRegistration.id, data];
 }
 

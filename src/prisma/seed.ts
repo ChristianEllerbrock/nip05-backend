@@ -1,16 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { UserEventTypeId } from "./interfaces";
-import { seedBlockedIdentifier } from "./seed/seed-blocked-identifier";
-import { seedUser } from "./seed/seed-user";
-import { seedUserEventType } from "./seed/seed-user-event-type";
+import { seedSystemBlockedIdentifier } from "./seed/seed-system-blocked-identifier";
+import { seedSystemConfig } from "./seed/seed-system-config";
 
 const prisma = new PrismaClient();
 
 async function main() {
-    await seedUserEventType(prisma);
-    await seedBlockedIdentifier(prisma);
-
-    await seedUser(prisma);
+    await seedSystemConfig(prisma);
+    await seedSystemBlockedIdentifier(prisma);
 }
 
 main()

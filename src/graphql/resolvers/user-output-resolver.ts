@@ -1,10 +1,11 @@
-import { Args, Ctx, Query, Resolver } from "type-graphql";
+import { Args, Authorized, Ctx, Query, Resolver } from "type-graphql";
 import { FindUserInput } from "../inputs/find-user-input";
+import { RegistrationOutput } from "../outputs/registration-output";
 import { UserOutput } from "../outputs/user-output";
 import { GraphqlContext } from "../type-defs";
 
-@Resolver(UserOutput)
-export class UserOutputResolver {
+@Resolver()
+export class UserResolver {
     @Query((returns) => UserOutput)
     async user(
         @Ctx() context: GraphqlContext,
@@ -17,6 +18,22 @@ export class UserOutputResolver {
             throw new Error("Could not find user in database.");
         }
         return dbUser;
+    }
+
+    @Authorized()
+    @Query((returns) => [RegistrationOutput])
+    async myRegistrations(
+        @Ctx() context: GraphqlContext
+    ): Promise<RegistrationOutput[]> {
+        if (!context.user) {
+            return []; // this will NOT happen because of the @Authorized attribute
+        }
+
+        const dbRegistrations = await context.db.registration.findMany({
+            where: { userId: context.user.userId },
+        });
+
+        return dbRegistrations;
     }
 }
 

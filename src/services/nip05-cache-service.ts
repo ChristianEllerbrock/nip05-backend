@@ -1,7 +1,7 @@
 import { Nip05 } from "../nostr/type-defs";
 
 interface CacheStore {
-    userId: string;
+    registrationId: string;
     nip05: Nip05;
 }
 
@@ -38,9 +38,9 @@ export class Nip05CacheService {
 
     // #region Public Methods
 
-    set(identifier: string, userId: string, nip05: Nip05): CacheStore {
+    set(identifier: string, registrationId: string, nip05: Nip05): CacheStore {
         const cacheStore: CacheStore = {
-            userId,
+            registrationId: registrationId,
             nip05,
         };
         this._cacheStore.set(identifier, cacheStore);

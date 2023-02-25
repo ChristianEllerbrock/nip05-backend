@@ -3,7 +3,7 @@ BEGIN TRY
 BEGIN TRAN;
 
 -- AlterTable
-ALTER TABLE [dbo].[UserEvent] ADD [createdAt] DATETIME2 NOT NULL CONSTRAINT [UserEvent_createdAt_df] DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE [dbo].[Registration] ADD [nipped] INT NOT NULL CONSTRAINT [Registration_nipped_df] DEFAULT 0;
 
 COMMIT TRAN;
 

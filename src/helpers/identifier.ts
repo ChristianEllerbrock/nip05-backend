@@ -30,27 +30,45 @@ export class HelperIdentifier {
         // 3nd check:
         // On blocked list
         const dbBlockedIdentifier =
-            await PrismaService.instance.db.blockedIdentifier.findFirst({
+            await PrismaService.instance.db.systemBlockedIdentifier.findFirst({
                 where: { name: cleanIdentifier },
             });
         if (dbBlockedIdentifier) {
             return {
                 name: cleanIdentifier,
                 canBeRegistered: false,
-                reason: "Name is blocked.",
+                reason: "Name is blocked or reserved.",
             };
         }
 
         // 4th check:
         // already registered
-        const dbUser = await PrismaService.instance.db.user.findFirst({
-            where: { identifier: cleanIdentifier },
-        });
-        if (dbUser) {
+        const dbRegistration =
+            await PrismaService.instance.db.registration.findFirst({
+                where: {
+                    identifier: cleanIdentifier,
+                    verifiedAt: { not: null },
+                },
+            });
+        if (dbRegistration) {
             return {
                 name: cleanIdentifier,
                 canBeRegistered: false,
                 reason: "Name already registered.",
+            };
+        }
+
+        // 5th check:
+        // pending registration
+        const dbPendingRegistration =
+            await PrismaService.instance.db.registration.findFirst({
+                where: { identifier: cleanIdentifier, verifiedAt: null },
+            });
+        if (dbPendingRegistration) {
+            return {
+                name: cleanIdentifier,
+                canBeRegistered: false,
+                reason: "Name is pending registration.",
             };
         }
 

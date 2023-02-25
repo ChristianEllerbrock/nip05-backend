@@ -1,17 +1,22 @@
 import { Nostr, NostrEventKind } from "../nostr/nostr";
 import { NostrClient } from "../nostr/nostr-client";
 
-export class RelayService_ {
+export enum SendCodeReason {
+    Registration,
+    Login,
+}
+
+export class RelayService {
     // #region Singleton
 
-    private static _instance: RelayService_;
+    private static _instance: RelayService;
 
     static get instance() {
         if (this._instance) {
             return this._instance;
         }
 
-        this._instance = new RelayService_();
+        this._instance = new RelayService();
         return this._instance;
     }
 
@@ -40,67 +45,75 @@ export class RelayService_ {
 
     // #region Public Methods
 
-    async sendAuthAsync(
+    async sendCodeAsync(
         relayAddress: string,
         pubkey: string,
         code: string,
+        reason: SendCodeReason,
         fraudId: string
     ): Promise<boolean> {
-        try {
-            const client = new NostrClient(relayAddress);
+        const client = new NostrClient(relayAddress);
 
-            // First, send the NIP05 infos from the sending bot to the relay.
-            const kind0Content = {
-                name: "nip05.social",
-                nip05: "registration@nip05.social",
-            };
+        // First, send the NIP05 infos from the sending bot to the relay.
+        const kind0Content = {
+            name: "nip05.social",
+            nip05: "bot@nip05.social",
+        };
 
-            const kind0Event = Nostr.createEvent({
-                privkey: this._botPrivkey,
-                data: {
-                    kind: NostrEventKind.Metadata,
-                    pubkey: this.botPubKey as string,
-                    created_at: Math.floor(Date.now() / 1000),
-                    content: JSON.stringify(kind0Content),
-                    tags: [],
-                },
-            });
-            await client.sendAsync(kind0Event);
+        const kind0Event = Nostr.createEvent({
+            privkey: this._botPrivkey,
+            data: {
+                kind: NostrEventKind.Metadata,
+                pubkey: this.botPubKey as string,
+                created_at: Math.floor(Date.now() / 1000),
+                content: JSON.stringify(kind0Content),
+                tags: [],
+            },
+        });
+        await client.sendAsync(kind0Event);
 
-            // Second, send the direct message with the registration information to the receiver.
-            const registerContent = `Your REGISTRATION code is ${code}
+        // Second, send the direct message with the login/registration information to the receiver.
+        let content = "";
+        if (reason === SendCodeReason.Registration) {
+            content = `Your REGISTRATION code is ${code}
 
 If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
 
-https://nip05.social/fraud/${fraudId}
+https://nip05.social/registration-fraud/${fraudId}
 
 Your nip05.social Team`;
+        } else {
+            content = `Your LOGIN code is ${code}
 
-            const encryptedRegisterContent = await Nostr.encryptDirectMessage(
-                this._botPrivkey,
-                pubkey,
-                registerContent
-            );
+If you did not initiate this login you can either ignore this message or click on the following link to report a fraud attempt:
 
-            const kind4Event = Nostr.createEvent({
-                privkey: this._botPrivkey,
-                data: {
-                    pubkey: this.botPubKey as string,
-                    created_at: Math.floor(Date.now() / 1000),
-                    kind: 4,
-                    tags: [["p", pubkey]],
-                    content: encryptedRegisterContent,
-                },
-            });
-            await client.sendAsync(kind4Event);
+https://nip05.social/login-fraud/${fraudId}
 
-            //client.close();
-            // await relay.close(); Currently leads to an error
-            return true;
-        } catch (error) {
-            console.log(error);
-            return false;
+Your nip05.social Team`;
         }
+
+        const encryptedRegisterContent = await Nostr.encryptDirectMessage(
+            this._botPrivkey,
+            pubkey,
+            content
+        );
+
+        const kind4Event = Nostr.createEvent({
+            privkey: this._botPrivkey,
+            data: {
+                pubkey: this.botPubKey as string,
+                created_at: Math.floor(Date.now() / 1000),
+                kind: 4,
+                tags: [["p", pubkey]],
+                content: encryptedRegisterContent,
+            },
+        });
+        console.log(kind4Event);
+        await client.sendAsync(kind4Event);
+
+        //client.close();
+        // await relay.close(); Currently leads to an error
+        return true;
     }
 
     // #endregion Public Methods
