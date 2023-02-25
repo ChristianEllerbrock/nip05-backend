@@ -39,7 +39,9 @@ export class LoginResolver {
         }
 
         if (dbUserLoginCode.code !== args.code) {
-            throw new Error("The provided code does not match.");
+            throw new Error(
+                "The provided code does not match the one we sent you."
+            );
         }
 
         // Code matches. Finalize login.
@@ -79,11 +81,11 @@ export class LoginResolver {
         return dbUserToken;
     }
 
-    @Mutation((returns) => Boolean)
+    @Mutation((returns) => String)
     async createLoginCode(
         @Args() args: LoginCodeCreateInput,
         @Ctx() context: GraphqlContext
-    ): Promise<boolean> {
+    ): Promise<string> {
         await cleanupExpiredLoginsAsync();
 
         const now = DateTime.now();
@@ -130,6 +132,7 @@ export class LoginResolver {
             dbUserLoginCode.id
         );
 
-        return true;
+        return dbUser.id;
     }
 }
+
