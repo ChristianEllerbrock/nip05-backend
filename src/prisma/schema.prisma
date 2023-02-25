@@ -14,8 +14,8 @@ model User {
     createdAt DateTime
 
     registrations Registration[]
-    userRelays    UserRelay[]
     userToken     UserToken?
+    userLoginCode UserLoginCode?
 }
 
 model UserToken {
@@ -36,8 +36,9 @@ model Registration {
     verifiedAt DateTime?
     nipped     Int       @default(0)
 
-    user             User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-    registrationCode RegistrationCode?
+    user               User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+    registrationCode   RegistrationCode?
+    registrationRelays RegistrationRelay[]
 }
 
 model RegistrationCode {
@@ -50,10 +51,20 @@ model RegistrationCode {
     registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
-model UserRelay {
-    id      String @id @default(uuid())
-    userId  String
-    address String
+model RegistrationRelay {
+    id             String @id @default(uuid())
+    registrationId String
+    address        String
+
+    registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model UserLoginCode {
+    id         String   @id @default(uuid())
+    userId     String   @unique
+    code       String
+    createdAt  DateTime
+    validUntil DateTime
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }

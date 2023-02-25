@@ -1,10 +1,13 @@
-import { FieldResolver, Resolver, Root } from "type-graphql";
+import { Authorized, Ctx, FieldResolver, Resolver, Root } from "type-graphql";
 import { PrismaService } from "../../services/prisma-service";
 import { RegistrationOutput } from "../outputs/registration-output";
+import { RegistrationRelayOutput } from "../outputs/registration-relay-output";
 import { UserOutput } from "../outputs/user-output";
+import { GraphqlContext } from "../type-defs";
 
 @Resolver((of) => RegistrationOutput)
 export class RegistrationResolverRelations {
+    @Authorized()
     @FieldResolver((returns) => UserOutput, { nullable: true })
     async user(
         @Root() registration: RegistrationOutput
@@ -16,6 +19,19 @@ export class RegistrationResolverRelations {
             .user({});
 
         return dbUser;
+    }
+
+    @Authorized()
+    @FieldResolver((returns) => [RegistrationRelayOutput], { nullable: true })
+    async registrationRelays(
+        @Root() registration: RegistrationOutput,
+        @Ctx() context: GraphqlContext
+    ): Promise<RegistrationRelayOutput[] | null> {
+        return await context.db.registration
+            .findUnique({
+                where: { id: registration.id },
+            })
+            .registrationRelays({});
     }
 }
 

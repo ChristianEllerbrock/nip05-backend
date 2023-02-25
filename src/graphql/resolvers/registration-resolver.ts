@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { Args, Mutation, Resolver } from "type-graphql";
+import { Args, Authorized, Mutation, Resolver } from "type-graphql";
 import { HelperAuth } from "../../helpers/helper-auth";
 import { HelperIdentifier } from "../../helpers/identifier";
 import { Nostr } from "../../nostr/nostr";
@@ -11,9 +11,10 @@ import { RegistrationCreateInput } from "../inputs/registration-create-input";
 import { RegistrationOutput } from "../outputs/registration-output";
 import { UserTokenOutput } from "../outputs/user-token-output";
 import * as uuid from "uuid";
-import { RelayService_ } from "../../services/relay-service";
+import { RelayService, SendCodeReason } from "../../services/relay-service";
+import { RegistrationRelayOutput } from "../outputs/registration-relay-output";
 
-const cleanupRegistrationAsync = async () => {
+const cleanupExpiredRegistrationsAsync = async () => {
     const now = DateTime.now();
 
     await PrismaService.instance.db.registration.deleteMany({
@@ -30,7 +31,7 @@ export class RegistrationResolver {
     async redeemRegistrationCode(
         @Args() args: RegistrationCodeRedeemInput
     ): Promise<UserTokenOutput> {
-        await cleanupRegistrationAsync();
+        await cleanupExpiredRegistrationsAsync();
 
         const dbRegistration =
             await PrismaService.instance.db.registration.findFirst({
@@ -95,7 +96,7 @@ export class RegistrationResolver {
     async createRegistrationCode(
         @Args() args: RegistrationCodeCreateInput
     ): Promise<boolean> {
-        await cleanupRegistrationAsync();
+        await cleanupExpiredRegistrationsAsync();
 
         const now = DateTime.now();
 
@@ -144,12 +145,11 @@ export class RegistrationResolver {
 
         // TODO: Send code via NOSTR relay
 
-        const result = await RelayService_.instance.sendAuthAsync(
-            //"wss://nostr.yael.at",
-            //"wss://relay.nostr.info",
+        const result = await RelayService.instance.sendCodeAsync(
             args.relay,
             dbRegistration.user.pubkey,
             dbRegistrationCode.code,
+            SendCodeReason.Registration,
             dbRegistration.id
         );
         return true;
@@ -159,7 +159,7 @@ export class RegistrationResolver {
     async createRegistration(
         @Args() args: RegistrationCreateInput
     ): Promise<RegistrationOutput> {
-        await cleanupRegistrationAsync();
+        await cleanupExpiredRegistrationsAsync();
 
         const now = DateTime.now();
 
@@ -192,7 +192,9 @@ export class RegistrationResolver {
                 SystemConfigId.RegistrationValidityInMinutes
             );
         if (!registrationValidityInMinutes) {
-            throw new Error("System config not found in database.");
+            throw new Error(
+                "System config not found in database. Please contact support."
+            );
         }
 
         // Create registration in database
@@ -212,5 +214,13 @@ export class RegistrationResolver {
         return dbRegistration;
         // return dbAuthRegistration;
     }
+
+    // #region Authorized Mutations
+
+    @Authorized()
+    @Mutation((returns) => RegistrationRelayOutput)
+    async addRegistrationRelay(): Promise<RegistrationRelayOutput> {}
+
+    // #endregion Authorized Mutations
 }
 

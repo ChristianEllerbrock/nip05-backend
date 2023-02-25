@@ -15,9 +15,8 @@ export async function buildNip05FromDatabaseAsync(
                 verifiedAt: { not: null },
             },
             include: {
-                user: {
-                    include: { userRelays: true },
-                },
+                user: true,
+                registrationRelays: true,
             },
         });
 
@@ -30,10 +29,10 @@ export async function buildNip05FromDatabaseAsync(
     };
     data.names[identifier] = dbRegistration.user.pubkey;
 
-    if (dbRegistration.user.userRelays.length > 0) {
+    if (dbRegistration.registrationRelays.length > 0) {
         data.relays = {};
         data.relays[dbRegistration.user.pubkey] =
-            dbRegistration.user.userRelays.map((x) => x.address);
+            dbRegistration.registrationRelays.map((x) => x.address);
     }
 
     return [dbRegistration.id, data];
