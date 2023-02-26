@@ -76,7 +76,9 @@ export class RelayService {
         // Second, send the direct message with the login/registration information to the receiver.
         let content = "";
         if (reason === SendCodeReason.Registration) {
-            content = `Your REGISTRATION code is ${code}
+            content = `Your REGISTRATION code is:
+            
+${Array.from(code).join(" ")}
 
 If you did not initiate this registration you can either ignore this message or click on the following link to report a fraud attempt:
 
@@ -84,7 +86,9 @@ https://nip05.social/registration-fraud/${fraudId}
 
 Your nip05.social Team`;
         } else {
-            content = `Your LOGIN code is ${code}
+            content = `Your LOGIN code is:
+
+${Array.from(code).join(" ")}
 
 If you did not initiate this login you can either ignore this message or click on the following link to report a fraud attempt:
 
