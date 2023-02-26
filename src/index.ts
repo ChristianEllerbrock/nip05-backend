@@ -25,6 +25,9 @@ app.use(cors());
 // API Controller routes
 app.get("/.well-known/nostr.json", wellKnownController);
 app.get("/hex", hexController);
+app.get("/", (req, res, next) => {
+    res.redirect(EnvService.instance.env.APP_URL);
+});
 
 async function bootstrap() {
     const schema = await buildSchema(schemaOptions);

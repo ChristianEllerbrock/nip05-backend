@@ -12,6 +12,7 @@ export class EnvServiceEnv {
     SHADOW_DATABASE_URL!: string;
 
     BOT_PRIVKEY!: string;
+    APP_URL!: string;
 }
 
 export class EnvService {
