@@ -13,6 +13,7 @@ export class EnvServiceEnv {
 
     BOT_PRIVKEY!: string;
     APP_URL!: string;
+    DOMAIN!: string;
 }
 
 export class EnvService {

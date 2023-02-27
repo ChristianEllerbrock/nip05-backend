@@ -58,7 +58,7 @@ export class RelayService {
         // First, send the NIP05 infos from the sending bot to the relay.
         const kind0Content = {
             name: "nip05.social",
-            nip05: "bot@nip05.social",
+            nip05: "bot@" + EnvService.instance.env.DOMAIN,
         };
 
         const kind0Event = Nostr.createEvent({
