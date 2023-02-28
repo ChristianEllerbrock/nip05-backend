@@ -5,7 +5,7 @@ import { UserOutput } from "../outputs/user-output";
 import { GraphqlContext } from "../type-defs";
 
 @Resolver()
-export class UserResolver {
+export class UserRelatedResolver {
     @Query((returns) => UserOutput)
     async user(
         @Ctx() context: GraphqlContext,
@@ -34,6 +34,15 @@ export class UserResolver {
         });
 
         return dbRegistrations;
+    }
+
+    @Query((returns) => Boolean)
+    async isAuthenticated(@Ctx() context: GraphqlContext): Promise<boolean> {
+        if (!context.user) {
+            return false;
+        }
+
+        return await context.user.hasValidTokenAsync();
     }
 }
 
