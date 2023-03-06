@@ -3,16 +3,20 @@ import { IncomingMessage } from "node:http";
 import { AuthChecker } from "type-graphql";
 import { Nostr } from "../nostr/nostr";
 import { PrismaService } from "../services/prisma-service";
+import * as uuid from "uuid";
+import { DateTime } from "luxon";
+import { SystemConfigId } from "../prisma/assortments";
+import { UserTokenOutput } from "./outputs/user-token-output";
 
 export interface GraphqlContext {
     db: PrismaClient;
     user:
-        | {
-              userId: string;
-              userToken: string;
-              hasValidTokenAsync: () => Promise<boolean>;
-          }
-        | undefined;
+    | {
+        userId: string;
+        userToken: string;
+        hasValidTokenAsync: () => Promise<boolean>;
+    }
+    | undefined;
 }
 
 export const getGraphqlContext = function (
@@ -26,36 +30,36 @@ export const getGraphqlContext = function (
 
         const value2 = req.headers["nip05socialauthorization"];
         userToken = Array.isArray(value2) ? undefined : value2;
-    } catch (error) {}
+    } catch (error) { }
 
     const user =
         typeof userId !== "undefined" && typeof userToken !== "undefined"
             ? {
-                  userId,
-                  userToken,
-                  hasValidTokenAsync: async (): Promise<boolean> => {
-                      if (
-                          typeof userId === "undefined" ||
-                          typeof userToken === "undefined"
-                      ) {
-                          return false;
-                      }
+                userId,
+                userToken,
+                hasValidTokenAsync: async (): Promise<boolean> => {
+                    if (
+                        typeof userId === "undefined" ||
+                        typeof userToken === "undefined"
+                    ) {
+                        return false;
+                    }
 
-                      const dbUserToken =
-                          await PrismaService.instance.db.userToken.findFirst({
-                              where: { userId, token: userToken },
-                          });
+                    const dbUserToken =
+                        await PrismaService.instance.db.userToken.findFirst({
+                            where: { userId, token: userToken },
+                        });
 
-                      if (!dbUserToken) {
-                          return false;
-                      }
+                    if (!dbUserToken) {
+                        return false;
+                    }
 
-                      // Check validity
-                      return Date.now() < dbUserToken.validUntil.getTime()
-                          ? true
-                          : false;
-                  },
-              }
+                    // Check validity
+                    return Date.now() < dbUserToken.validUntil.getTime()
+                        ? true
+                        : false;
+                },
+            }
             : undefined;
 
     return {
@@ -96,3 +100,32 @@ export const getOrCreateUserInDatabaseAsync = async (
     return dbUser;
 };
 
+export const updateUserToken = async (userId: string): Promise<UserTokenOutput> => {
+    const now = DateTime.now();
+    const userTokenValidityInMinutes =
+        await PrismaService.instance.getSystemConfigAsNumberAsync(
+            SystemConfigId.UserTokenValidityInMinutes
+        );
+
+    if (!userTokenValidityInMinutes) {
+        throw new Error("Invalid system config. Please contact support.");
+    }
+
+    const validUntil = now.plus({ minute: userTokenValidityInMinutes }).toJSDate();
+    const token = uuid.v4();
+
+    const dbUserToken = await PrismaService.instance.db.userToken.upsert({
+        where: { userId },
+        update: {
+            token,
+            validUntil
+        },
+        create: {
+            userId,
+            token,
+            validUntil
+        }
+    });
+
+    return dbUserToken;
+}

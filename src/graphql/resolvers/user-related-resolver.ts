@@ -35,14 +35,5 @@ export class UserRelatedResolver {
 
         return dbRegistrations;
     }
-
-    @Query((returns) => Boolean)
-    async isAuthenticated(@Ctx() context: GraphqlContext): Promise<boolean> {
-        if (!context.user) {
-            return false;
-        }
-
-        return await context.user.hasValidTokenAsync();
-    }
 }
 
