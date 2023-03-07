@@ -1,5 +1,6 @@
 import { Field, Int, ObjectType } from "type-graphql";
 import { RegistrationCodeOutput } from "./registration-code-output";
+import { RegistrationRelayOutput } from "./registration-relay-output";
 import { UserOutput } from "./user-output";
 
 @ObjectType("RegistrationOutput", {
@@ -37,5 +38,7 @@ export class RegistrationOutput {
 
     //@Field((type) => RegistrationCodeOutput, { nullable: true })
     //registrationCode?: RegistrationCodeOutput | null;
+    @Field((type) => [RegistrationCodeOutput])
+    registrationsRelays?: RegistrationRelayOutput[];
 }
 
