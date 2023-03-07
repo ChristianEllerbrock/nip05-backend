@@ -17,7 +17,7 @@ dotenv.config();
 const GRAPHQL_ENDPOINT = "/graphql";
 
 const app: Express = express();
-const port = EnvService.instance.env.PORT ?? 4000;
+const port = EnvService.instance.env.PORT;
 
 app.use(express.json());
 app.use(cors());

@@ -4,10 +4,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export class EnvServiceEnv {
-    private _optionalProperties = ['PORT', 'NODE_TLS_REJECT_UNAUTHORIZED', 'SHADOW_DATABASE_URL'];
+    private _optionalProperties = [
+        "NODE_TLS_REJECT_UNAUTHORIZED",
+        "SHADOW_DATABASE_URL",
+    ];
 
-
-    PORT?: string;
+    PORT!: string;
 
     NODE_TLS_REJECT_UNAUTHORIZED?: string;
 
@@ -64,7 +66,7 @@ export class EnvService {
         console.log("Trying to read the following required keys from ENV:");
 
         for (let key of Object.keys(env)) {
-            if (key[0] === '_') {
+            if (key[0] === "_") {
                 continue;
             }
 
@@ -76,7 +78,7 @@ export class EnvService {
         }
 
         for (let key of Object.keys(env)) {
-            if (key[0] === '_') {
+            if (key[0] === "_") {
                 continue;
             }
 
