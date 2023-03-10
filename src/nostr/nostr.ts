@@ -117,6 +117,18 @@ export class Nostr {
         return Nostr._nSomethingToHexObject(nXXX);
     }
 
+    static Pubkey2nPub(hex: string): string {
+        const data = secp256k1.utils.hexToBytes(hex);
+        const words = bech32.toWords(data);
+        return bech32.encode("npub", words, 5000);
+    }
+
+    static Privkey2nSec(hex: string): string {
+        const data = secp256k1.utils.hexToBytes(hex);
+        const words = bech32.toWords(data);
+        return bech32.encode("nsec", words, 5000);
+    }
+
     static generatePrivKeyHexObject(): NostrHexObject {
         return {
             represents: "nsec",

@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { Args, Authorized, Mutation, Resolver } from "type-graphql";
+import { Args, Authorized, Ctx, Mutation, Resolver } from "type-graphql";
 import { HelperAuth } from "../../helpers/helper-auth";
 import { HelperIdentifier } from "../../helpers/identifier";
 import { Nostr } from "../../nostr/nostr";
@@ -13,6 +13,9 @@ import { UserTokenOutput } from "../outputs/user-token-output";
 import * as uuid from "uuid";
 import { RelayService, SendCodeReason } from "../../services/relay-service";
 import { RegistrationRelayOutput } from "../outputs/registration-relay-output";
+import { GraphqlContext } from "../type-defs";
+import { RegistrationDeleteInputArgs } from "../inputs/registration-delete-input";
+import { Void } from "graphql-scalars/typings/typeDefs";
 
 const cleanupExpiredRegistrationsAsync = async () => {
     const now = DateTime.now();
@@ -213,6 +216,19 @@ export class RegistrationResolver {
 
         return dbRegistration;
         // return dbAuthRegistration;
+    }
+
+    @Authorized()
+    @Mutation(returns => String)
+    async deleteRegistration(@Ctx() context: GraphqlContext, @Args() args: RegistrationDeleteInputArgs): Promise<string> {
+        const dbRegistration = await context.db.registration.findUnique({ where: { id: args.registrationId } });
+
+        if (!dbRegistration || dbRegistration?.userId !== context.user?.userId) {
+            throw new Error(`Could not find your registration with id '${args.registrationId}'.`);
+        }
+
+        await context.db.registration.delete({ where: { id: dbRegistration.id } });
+        return dbRegistration.id;
     }
 }
 

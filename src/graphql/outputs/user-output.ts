@@ -16,5 +16,8 @@ export class UserOutput {
 
     @Field((type) => [RegistrationOutput], { nullable: true })
     registrations?: RegistrationOutput[] | null;
+
+    @Field(type => String)
+    npub?: string;
 }
 
