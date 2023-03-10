@@ -1,6 +1,7 @@
 import { BuildSchemaOptions } from "type-graphql";
 import { AuthResolver } from "./resolvers/auth-resolver";
 import { LoginResolver } from "./resolvers/login-resolver";
+import { RegistrationRelayResolver } from "./resolvers/registration-relay-resolver";
 import { RegistrationResolver } from "./resolvers/registration-resolver";
 import { RegistrationResolverRelations } from "./resolvers/registration-resolver-relations";
 import { UserRelatedResolver } from "./resolvers/user-related-resolver";
@@ -12,6 +13,7 @@ export const schemaOptions: BuildSchemaOptions = {
         UserRelatedResolver,
         RegistrationResolver,
         RegistrationResolverRelations,
+        RegistrationRelayResolver,
         LoginResolver,
     ],
     authChecker: customAuthChecker,

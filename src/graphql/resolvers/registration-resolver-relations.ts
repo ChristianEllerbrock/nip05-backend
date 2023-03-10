@@ -27,11 +27,17 @@ export class RegistrationResolverRelations {
         @Root() registration: RegistrationOutput,
         @Ctx() context: GraphqlContext
     ): Promise<RegistrationRelayOutput[] | null> {
-        return await context.db.registration
+        const dbRegistrations = await context.db.registration
             .findUnique({
                 where: { id: registration.id },
             })
             .registrationRelays({});
+
+        if (dbRegistrations === null) {
+            return [];
+        }
+
+        return dbRegistrations.sortBy(x => x.address);
     }
 }
 

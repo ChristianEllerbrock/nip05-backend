@@ -214,13 +214,5 @@ export class RegistrationResolver {
         return dbRegistration;
         // return dbAuthRegistration;
     }
-
-    // #region Authorized Mutations
-
-    // @Authorized()
-    // @Mutation((returns) => RegistrationRelayOutput)
-    // async addRegistrationRelay(): Promise<RegistrationRelayOutput> {}
-
-    // #endregion Authorized Mutations
 }
 

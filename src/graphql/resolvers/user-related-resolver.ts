@@ -33,7 +33,7 @@ export class UserRelatedResolver {
             where: { userId: context.user.userId },
         });
 
-        return dbRegistrations;
+        return dbRegistrations.sortBy(x => x.identifier);
     }
 }
 
