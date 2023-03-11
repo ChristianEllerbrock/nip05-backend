@@ -1,4 +1,4 @@
-import { Args, Authorized, Ctx, Query, Resolver } from "type-graphql";
+import { Args, Authorized, Ctx, Mutation, Query, Resolver } from "type-graphql";
 import { FindUserInput } from "../inputs/find-user-input";
 import { RegistrationOutput } from "../outputs/registration-output";
 import { UserOutput } from "../outputs/user-output";
@@ -8,9 +8,7 @@ import { GraphqlContext } from "../type-defs";
 export class UserRelatedResolver {
     @Authorized()
     @Query((returns) => UserOutput)
-    async myUser(
-        @Ctx() context: GraphqlContext
-    ): Promise<UserOutput> {
+    async myUser(@Ctx() context: GraphqlContext): Promise<UserOutput> {
         const dbUser = await context.db.user.findUnique({
             where: { id: context.user?.userId },
         });
@@ -35,7 +33,14 @@ export class UserRelatedResolver {
             where: { userId: context.user.userId },
         });
 
-        return dbRegistrations.sortBy(x => x.identifier);
+        return dbRegistrations.sortBy((x) => x.identifier);
+    }
+
+    @Authorized()
+    @Mutation((returns) => String)
+    async deleteMyUser(@Ctx() context: GraphqlContext): Promise<string> {
+        await context.db.user.delete({ where: { id: context.user?.userId } });
+        return context.user?.userId ?? "unknown";
     }
 }
 
