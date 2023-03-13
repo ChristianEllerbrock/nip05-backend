@@ -4,15 +4,15 @@ import { GraphqlContext, updateUserToken } from "../type-defs";
 
 @Resolver()
 export class AuthResolver {
-    @Query((returns) => UserTokenOutput)
-    async isAuthenticated(@Ctx() context: GraphqlContext): Promise<UserTokenOutput> {
+    @Query((returns) => UserTokenOutput, { nullable: true })
+    async isAuthenticated(@Ctx() context: GraphqlContext): Promise<UserTokenOutput | null> {
         if (!context.user) {
-            throw new Error("You are not authorized.");
+            return null;
         }
 
         const hasValidToken = await context.user.hasValidTokenAsync();
         if (!hasValidToken) {
-            throw new Error("Your access token has expired. Please login again.");
+            return null;
         }
 
         return await updateUserToken(context.user.userId);
